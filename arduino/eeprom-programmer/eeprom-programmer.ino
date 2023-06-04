@@ -47,20 +47,26 @@ void writeEEPROM(int address, byte data) {
 
   for (int pin = EEPROM_D0; pin <= EEPROM_D7; pin += 1) {
     digitalWrite(pin, data & 1);
+    delayMicroseconds(200);
     data = data >> 1;
   }
   digitalWrite(WRITE_EN, LOW);
   delayMicroseconds(1);
   digitalWrite(WRITE_EN, HIGH);
-  delay(10);
+  // delay(10);
 }
 
 
 /*
  * Read the contents of the EEPROM and print them to the serial monitor.
  */
-void printContents() {
-  for (long base = 0; base <= MEM_SIZE - 1; base += 16) {
+void printContents()
+{
+  printContents(0, MEM_SIZE - 1);
+}
+
+void printContents(long start, long end) {
+  for (long base = start; base <= end; base += 16) {
     byte data[16];
     for (int offset = 0; offset <= 15; offset += 1) {
       data[offset] = readEEPROM(base + offset);
@@ -75,13 +81,17 @@ void printContents() {
   }
 }
 
+void fillEeprom(byte data)
+{  
+  for (long address = 0; address <= MEM_SIZE - 1; address += 1) {
+    writeEEPROM(address, data);
 
-// 4-bit hex decoder for common anode 7-segment display
-byte data[] = { 0x81, 0xcf, 0x92, 0x86, 0xcc, 0xa4, 0xa0, 0x8f, 0x80, 0x84, 0x88, 0xe0, 0xb1, 0xc2, 0xb0, 0xb8 };
-
-// 4-bit hex decoder for common cathode 7-segment display
-// byte data[] = { 0x7e, 0x30, 0x6d, 0x79, 0x33, 0x5b, 0x5f, 0x70, 0x7f, 0x7b, 0x77, 0x1f, 0x4e, 0x3d, 0x4f, 0x47 };
-
+    if (address % 64 == 0) {
+      Serial.print(".");
+    }
+  }
+  Serial.println(" done");
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -92,33 +102,12 @@ void setup() {
   pinMode(WRITE_EN, OUTPUT);
   Serial.begin(57600);
 
-  // Erase entire EEPROM
-  Serial.print("Filling EEPROM with NOP");
-  for (long address = 0; address <= MEM_SIZE - 1; address += 1) {
-    writeEEPROM(address, 0xea);
-
-    if (address % 64 == 0) {
-      Serial.print(".");
-    }
-  }
-  Serial.println(" done");
-
-
-  // Program data bytes
-  // Serial.print("Programming EEPROM");
-  // for (int address = 0; address < sizeof(data); address += 1) {
-  //   writeEEPROM(address, data[address]);
-
-  //   if (address % 64 == 0) {
-  //     Serial.print(".");
-  //   }
-  // }
-  // Serial.println(" done");
-
+  Serial.println("Filling EEPROM with NOP");
+  // fillEeprom(0xea);
 
   // Read and print out the contents of the EERPROM
   Serial.println("Reading EEPROM");
-  printContents();
+  printContents(0x7000, 0x7F00);
 }
 
 
